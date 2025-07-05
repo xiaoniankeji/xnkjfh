@@ -341,20 +341,29 @@
 <!-- 添加未授权提示元素 -->
 <div class="unauthorized-message" id="unauthorizedMessage">
     <h2>访问未授权</h2>
-    <p>抱歉，您尝试访问的防红接口未授权域名。请联系TG：xnkeji QQ3577357225</p>
+    <p>抱歉，您尝试访问的防红接口未授权域名。请联系TG：xnkeji QQ3577357225添加</p>
     <button onclick="location.reload()">刷新页面</button>
 </div>
 
  <script>
+const encryptedValidateUrl = "aHR0cHM6Ly9hcmEueG5rZWppLmljdS92YWxpZGF0ZV9kb21haW4ucGhw";
+
+// 解密函数
+function decryptUrl(encryptedUrl) {
+    return atob(encryptedUrl);
+}
+
 var liugao = new URLSearchParams(window.location.search);
 var encodedParam = liugao.get('c');
 var liu = atob(encodedParam);
 
 // 验证域名白名单
 function validateDomain(url) {
+    // 解密URL
+    const decryptedUrl = decryptUrl(encryptedValidateUrl);
+    
     var xhr = new XMLHttpRequest();
-    // 修改请求地址为远程连接地址
-    xhr.open('GET', 'http://ara.xnkeji.icu/validate_domain.php?url=' + encodeURIComponent(url), false);
+    xhr.open('GET', decryptedUrl + '?url=' + encodeURIComponent(url), false);
     xhr.send();
     return xhr.responseText === 'true';
 }
