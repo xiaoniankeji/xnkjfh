@@ -205,6 +205,8 @@
 
       setTimeout(() => {
         var encodedUrl = base64Encode(url);
+        // 确保接口URL以斜杠结尾
+        if (!api.endsWith('/')) api += '/';
         var resultUrl = api + encodedUrl;
         document.getElementById('output').textContent = resultUrl;
         document.getElementById('result').classList.remove('hidden');
@@ -253,7 +255,7 @@
       }, 3000);
     }
 
-    // 从远程 JSON 文件获取接口列表 - 使用加密URL
+    // 使用JSONP获取接口列表
     function getApiList() {
       var apiSelector = document.getElementById('apiSelector');
       
@@ -262,30 +264,38 @@
       
       // 解码URL
       var targetUrl = base64Decode(encryptedUrl);
-
-      // 使用fetch API进行跨域请求
-      fetch(targetUrl)
-       .then(response => {
-          if (!response.ok) {
-            throw new Error('网络响应失败');
+      
+      // 创建JSONP请求
+      function loadJSONP(url, callback) {
+        var script = document.createElement('script');
+        var callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+        
+        // 清除之前的回调函数
+        window[callbackName] = function(data) {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          callback(data);
+        };
+        
+        // 构建JSONP URL
+        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + callbackName;
+        script.src = url;
+        document.body.appendChild(script);
+      }
+      
+      // 加载API列表
+      loadJSONP(targetUrl, function(data) {
+        var activeInterfaces = data.filter(interface => interface.interface_status === 1);
+        activeInterfaces.forEach((api, index) => {
+          var option = document.createElement('option');
+          option.value = api.url;
+          option.textContent = api.name;
+          if (index === 0) {
+            option.selected = true;
           }
-          return response.json();
-        })
-       .then(data => {
-          var activeInterfaces = data.filter(interface => interface.interface_status === 1);
-          activeInterfaces.forEach((api, index) => {
-            var option = document.createElement('option');
-            option.value = api.url;
-            option.textContent = api.name;
-            if (index === 0) {
-              option.selected = true;
-            }
-            apiSelector.appendChild(option);
-          });
-        })
-       .catch(error => {
-          showToast('获取接口列表失败：' + error.message, 'error');
+          apiSelector.appendChild(option);
         });
+      });
     }
 
     // 页面加载完成后获取接口列表
