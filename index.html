@@ -80,6 +80,7 @@
      <!-- 注意事项 -->
     <div class="p-3 bg-red-50 border-l-4 border-red-400 mx-3 mb-3 rounded shadow-sm flex items-center">
        <span class="text-red-500 text-lg mr-2"><i class="fa fa-exclamation-triangle"></i></span>
+       <!-- 文字大小从text-base调整为text-sm -->
        <span class="text-red-800 text-sm font-bold">请输入以 <span class="font-bold">https://</span> 开头的网址（仅支持HTTPS协议）</span>
     </div>
 
@@ -165,23 +166,25 @@
     <!-- 页脚 -->
     <div class="p-4 mt-4 border-t border-gray-100 text-center text-xs text-gray-400">
       <p>
-        搭建同款 | <a href="https://qm.qq.com/q/lmvQmbJXr2" target="_blank" class="text-primary cursor-pointer underline">添加QQ咨询</a>
+        搭建同款 | <span class="text-primary cursor-pointer underline" onclick="showWechat()">QQ扫码咨询</span>
       </p>
+      <div id="wechatModal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+        <div class="bg-white p-4 rounded-2xl shadow-lg max-w-xs w-full relative animate-fadeIn">
+          <span class="absolute top-2 right-2 text-gray-400 cursor-pointer text-xl font-bold" onclick="closeWechat()">&times;</span>
+          <img src="qq.png" alt="微信二维码" class="w-full rounded-xl mb-2">
+          <div class="text-sm text-gray-700 text-center">扫一扫上面的二维码图案，联系搭建/咨询！</div>
+        </div>
+      </div>
     </div>
   </div>
 
- 
+  <!-- Toast 提示 -->
   <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 hidden text-white font-medium text-sm"></div>
 
   <script>
-  
+    // Base64编码函数
     function base64Encode(str) {
       return btoa(unescape(encodeURIComponent(str)));
-    }
-    
-   
-    function base64Decode(encodedStr) {
-      return decodeURIComponent(escape(atob(encodedStr)));
     }
 
     // 生成防红链接
@@ -226,6 +229,7 @@
       }, 700);
     }
 
+    // 复制结果到剪贴板
     function copyResult() {
       var text = document.getElementById('output').textContent;
       if (!text) {
@@ -252,6 +256,8 @@
         document.body.removeChild(textarea);
       }
     }
+
+    // Toast 提示
     function showToast(message, type = 'info') {
       var toast = document.getElementById('toast');
       toast.textContent = message;
@@ -262,10 +268,19 @@
         toast.style.display = 'none';
       }, 2200);
     }
+
+    // 弹窗
+    function showWechat() {
+      document.getElementById('wechatModal').classList.remove('hidden');
+    }
+    function closeWechat() {
+      document.getElementById('wechatModal').classList.add('hidden');
+    }
+
+    // 从远程 JSON 文件获取接口列表
     function getApiList() {
       var apiSelector = document.getElementById('apiSelector');
-      var encryptedUrl = "aHR0cHM6Ly9maGprLnhua2VqaS50b3AvYXBpLWxpc3QuanNvbg==";
-      var targetUrl = base64Decode(encryptedUrl);
+      var targetUrl = 'https://fhjk.xnkeji.top/api-list.json';
       var xhr = new XMLHttpRequest();
       xhr.open('GET', targetUrl, true);
       xhr.onreadystatechange = function() {
@@ -291,6 +306,8 @@
       };
       xhr.send();
     }
+
+    // 页面加载完成后获取接口列表
     window.onload = function() {
       getApiList();
     };
