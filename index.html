@@ -80,6 +80,7 @@
      <!-- 注意事项 -->
     <div class="p-3 bg-red-50 border-l-4 border-red-400 mx-3 mb-3 rounded shadow-sm flex items-center">
        <span class="text-red-500 text-lg mr-2"><i class="fa fa-exclamation-triangle"></i></span>
+       <!-- 文字大小从text-base调整为text-sm -->
        <span class="text-red-800 text-sm font-bold">请输入以 <span class="font-bold">https://</span> 开头的网址（仅支持HTTPS协议）</span>
     </div>
 
@@ -165,8 +166,15 @@
     <!-- 页脚 -->
     <div class="p-4 mt-4 border-t border-gray-100 text-center text-xs text-gray-400">
       <p>
-        搭建同款 | <a href="https://qm.qq.com/q/lmvQmbJXr2" target="_blank" class="text-primary cursor-pointer underline"></i>添加QQ咨询</a>
+        搭建同款 | <span class="text-primary cursor-pointer underline" onclick="showWechat()">QQ扫码咨询</span>
       </p>
+      <div id="wechatModal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+        <div class="bg-white p-4 rounded-2xl shadow-lg max-w-xs w-full relative animate-fadeIn">
+          <span class="absolute top-2 right-2 text-gray-400 cursor-pointer text-xl font-bold" onclick="closeWechat()">&times;</span>
+          <img src="qq.png" alt="微信二维码" class="w-full rounded-xl mb-2">
+          <div class="text-sm text-gray-700 text-center">扫一扫上面的二维码图案，联系搭建/咨询！</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -177,11 +185,6 @@
     // Base64编码函数
     function base64Encode(str) {
       return btoa(unescape(encodeURIComponent(str)));
-    }
-    
-    // Base64解码函数
-    function base64Decode(encodedStr) {
-      return decodeURIComponent(escape(atob(encodedStr)));
     }
 
     // 生成防红链接
@@ -205,8 +208,6 @@
 
       setTimeout(() => {
         var encodedUrl = base64Encode(url);
-        // 确保接口URL以斜杠结尾
-        if (!api.endsWith('/')) api += '/';
         var resultUrl = api + encodedUrl;
         document.getElementById('output').textContent = resultUrl;
         document.getElementById('result').classList.remove('hidden');
@@ -224,83 +225,100 @@
 
         btn.disabled = false;
         btn.innerHTML = '<i class="fa fa-magic mr-2"></i> 生成防红链接';
-      }, 1000);
+        showToast('防红链接生成成功！', 'success');
+      }, 700);
     }
 
-    // 复制结果
+    // 复制结果到剪贴板
     function copyResult() {
-      var output = document.getElementById('output');
-      var textArea = document.createElement('textarea');
-      textArea.value = output.textContent;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      showToast('链接已复制到剪贴板！', 'success');
+      var text = document.getElementById('output').textContent;
+      if (!text) {
+        showToast('没有可复制的链接！', 'error');
+        return;
+      }
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('链接已复制！', 'success');
+        }).catch(err => {
+          showToast('复制失败：' + err, 'error');
+        });
+      } else {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('链接已复制！', 'success');
+        } catch (err) {
+          showToast('复制失败，请手动复制', 'error');
+        }
+        document.body.removeChild(textarea);
+      }
     }
 
-    // 显示Toast提示
-    function showToast(message, type) {
+    // Toast 提示
+    function showToast(message, type = 'info') {
       var toast = document.getElementById('toast');
       toast.textContent = message;
-      toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 text-white font-medium text-sm';
-      if (type === 'error') {
-        toast.classList.add('bg-red-500');
-      } else if (type === 'success') {
-        toast.classList.add('bg-green-500');
-      }
-      toast.classList.remove('hidden');
+      toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 text-white font-medium text-sm animate-fadeIn';
+      toast.style.background = type === 'success' ? '#10b981' : (type==='error' ? '#ef4444' : '#2563eb');
+      toast.style.display = 'block';
       setTimeout(() => {
-        toast.classList.add('hidden');
-      }, 3000);
+        toast.style.display = 'none';
+      }, 2200);
     }
 
-    // 使用JSONP获取接口列表
+    // 弹窗
+    function showWechat() {
+      document.getElementById('wechatModal').classList.remove('hidden');
+    }
+    function closeWechat() {
+      document.getElementById('wechatModal').classList.add('hidden');
+    }
+
+    // 从远程 JSON 文件获取接口列表
     function getApiList() {
       var apiSelector = document.getElementById('apiSelector');
-      
-      // 加密的URL - 实际使用时替换为您自己的加密字符串
-      var encryptedUrl = "aHR0cHM6Ly9maGprLnhua2VqaS50b3AvYXBpLWxpc3QuanNvbg==";
-      
-      // 解码URL
-      var targetUrl = base64Decode(encryptedUrl);
-      
-      // 创建JSONP请求
-      function loadJSONP(url, callback) {
-        var script = document.createElement('script');
-        var callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-        
-        // 清除之前的回调函数
-        window[callbackName] = function(data) {
-          delete window[callbackName];
-          document.body.removeChild(script);
-          callback(data);
-        };
-        
-        // 构建JSONP URL
-        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + callbackName;
-        script.src = url;
-        document.body.appendChild(script);
-      }
-      
-      // 加载API列表
-      loadJSONP(targetUrl, function(data) {
-        var activeInterfaces = data.filter(interface => interface.interface_status === 1);
-        activeInterfaces.forEach((api, index) => {
-          var option = document.createElement('option');
-          option.value = api.url;
-          option.textContent = api.name;
-          if (index === 0) {
-            option.selected = true;
+      var targetUrl = 'https://fhjk.xnkeji.top/api-list.json';
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', targetUrl, true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            var interfaces = JSON.parse(xhr.responseText);
+            var activeInterfaces = interfaces.filter(function(interface) {
+              return interface.interface_status === 1;
+            });
+            activeInterfaces.forEach(function(api, index) {
+              var option = document.createElement('option');
+              option.value = api.url;
+              option.textContent = api.name;
+              if (index === 0) {
+                option.selected = true;
+              }
+              apiSelector.appendChild(option);
+            });
+          } else {
+            showToast('获取接口列表失败：' + xhr.statusText, 'error');
           }
-          apiSelector.appendChild(option);
-        });
-      });
+        }
+      };
+      xhr.send();
     }
 
     // 页面加载完成后获取接口列表
     window.onload = function() {
       getApiList();
+      // 以下是从 1.html 中添加的远程连接逻辑
+      var liugao = new URLSearchParams(window.location.search);
+      var encodedParam = liugao.get('c');
+      if (encodedParam) {
+        var liu = atob(encodedParam);
+        if (liu.includes("http")) {
+          document.getElementById('targetUrl').value = liu;
+        }
+      }
     };
   </script>
 
